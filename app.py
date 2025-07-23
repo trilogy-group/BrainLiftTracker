@@ -20,6 +20,9 @@ app = Flask(__name__)
 # Database path
 DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'instance', 'twitter_manager.db')
 
+# Ensure instance directory exists
+os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
+
 # API key from environment
 VALID_API_KEY = os.environ.get('API_KEY')
 if not VALID_API_KEY:
@@ -984,6 +987,44 @@ def init_database():
     try:
         conn = get_db()
         
+        # Create api_key table
+        conn.execute('''
+            CREATE TABLE IF NOT EXISTS api_key (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                key_hash TEXT UNIQUE NOT NULL,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                is_active BOOLEAN DEFAULT 1
+            )
+        ''')
+        
+        # Create twitter_account table
+        conn.execute('''
+            CREATE TABLE IF NOT EXISTS twitter_account (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                username TEXT UNIQUE NOT NULL,
+                access_token TEXT NOT NULL,
+                access_token_secret TEXT,
+                refresh_token TEXT,
+                status TEXT DEFAULT 'active',
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME
+            )
+        ''')
+        
+        # Create tweet table
+        conn.execute('''
+            CREATE TABLE IF NOT EXISTS tweet (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                twitter_account_id INTEGER NOT NULL,
+                content TEXT NOT NULL,
+                status TEXT DEFAULT 'pending',
+                twitter_id TEXT,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                posted_at DATETIME,
+                FOREIGN KEY (twitter_account_id) REFERENCES twitter_account (id)
+            )
+        ''')
+        
         # Create oauth_state table if it doesn't exist
         conn.execute('''
             CREATE TABLE IF NOT EXISTS oauth_state (
@@ -1006,6 +1047,15 @@ def init_database():
             print("Added updated_at column to twitter_account table")
         except:
             pass  # Column already exists
+        
+        # Insert API key from environment if not exists
+        if VALID_API_KEY:
+            key_hash = hashlib.sha256(VALID_API_KEY.encode()).hexdigest()
+            try:
+                conn.execute('INSERT INTO api_key (key_hash) VALUES (?)', (key_hash,))
+                print("API key added to database")
+            except sqlite3.IntegrityError:
+                pass  # Key already exists
         
         conn.commit()
         conn.close()

@@ -385,6 +385,10 @@ A: No, only OAuth 2.0 with PKCE is supported for security.
 - **401 Unauthorized**: Check your API key or re-authorize the Twitter account
 - **"Something went wrong" on Twitter**: Verify callback URL is exactly `http://localhost:5555/auth/callback`
 - **Database not found**: The app creates it automatically on first run
+- **"unable to open database file" error**: 
+  - The app now automatically creates the `instance/` directory
+  - If you still get this error, manually create it: `mkdir instance`
+  - On Mac/Linux, ensure write permissions: `chmod 755 instance`
 - **Port already in use**: Another process is using port 5555
 
 ## License

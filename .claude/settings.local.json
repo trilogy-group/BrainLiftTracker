@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl:*)",
+      "Bash(powershell:*)",
+      "Bash(python:*)",
+      "Bash(flask run)",
+      "Bash(find:*)",
+      "Bash(true)",
+      "Bash(rm:*)",
+      "Bash(set FLASK_ENV=development)",
+      "Bash(pip show:*)"
+    ],
+    "deny": []
+  }
+}

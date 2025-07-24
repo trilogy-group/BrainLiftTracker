@@ -132,3 +132,6 @@ nul
 kill_*.ps1
 *_backup*
 *.old
+
+# Deployment guides (keep private)
+DEPLOY_LIGHTSAIL.md

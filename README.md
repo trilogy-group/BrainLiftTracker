@@ -10,6 +10,9 @@ A Flask-based RESTful API for managing multiple Twitter accounts and posting con
 - **OAuth 2.0 Authentication**: Secure Twitter authentication flow with PKCE
 - **Real-Time Tweet Posting**: Post tweets directly to Twitter/X
 - **Batch Operations**: Post all pending tweets at once
+- **Twitter Lists**: Create and manage Twitter lists with multiple main accounts
+- **List Membership**: Add/remove accounts to/from lists with bulk operations
+- **Account Types**: Designate accounts as list owners or managed accounts
 - **Encryption**: Secure storage of credentials using Fernet encryption
 - **Token Management**: Support for refresh tokens and token updates
 - **API Authentication**: Secure API access with API keys
@@ -185,6 +188,120 @@ Content-Type: application/json
 
 Toggle mock mode for testing without real Twitter posts.
 
+### Account Type Management
+
+#### Set Account Type
+```http
+POST /api/v1/accounts/{account_id}/set-type
+X-API-Key: your-api-key
+Content-Type: application/json
+
+{
+    "account_type": "list_owner"
+}
+```
+
+Sets an account as either "managed" (default) or "list_owner". Only list_owner accounts can create and manage Twitter lists.
+
+#### Get Accounts by Type
+```http
+GET /api/v1/accounts?type=list_owner
+X-API-Key: your-api-key
+```
+
+Filter accounts by type. Useful for finding all accounts that can manage lists.
+
+### Twitter Lists Management
+
+Twitter Lists allow you to organize accounts into groups. This feature requires at least one account with type "list_owner".
+
+#### Create List
+```http
+POST /api/v1/lists
+X-API-Key: your-api-key
+Content-Type: application/json
+
+{
+    "name": "Tech Influencers",
+    "description": "Top technology voices",
+    "mode": "public",
+    "owner_account_id": 1
+}
+```
+
+Creates a new Twitter list. The `owner_account_id` must be an account with type "list_owner".
+- `mode` can be "private" (default) or "public"
+
+#### Get All Lists
+```http
+GET /api/v1/lists
+X-API-Key: your-api-key
+```
+
+Optional query parameter:
+- `owner_account_id` - Filter lists by owner
+
+#### Get List Details
+```http
+GET /api/v1/lists/{list_id}
+X-API-Key: your-api-key
+```
+
+Returns list details including all members.
+
+#### Update List
+```http
+PUT /api/v1/lists/{list_id}
+X-API-Key: your-api-key
+Content-Type: application/json
+
+{
+    "name": "Updated Name",
+    "description": "Updated description"
+}
+```
+
+Update list name and/or description.
+
+#### Delete List
+```http
+DELETE /api/v1/lists/{list_id}
+X-API-Key: your-api-key
+```
+
+Deletes a list from both Twitter and the local database.
+
+### List Membership Management
+
+#### Add Accounts to List
+```http
+POST /api/v1/lists/{list_id}/members
+X-API-Key: your-api-key
+Content-Type: application/json
+
+{
+    "account_ids": [2, 3, 4, 5]
+}
+```
+
+Add multiple accounts to a list. Returns details of successful and failed additions.
+
+#### Get List Members
+```http
+GET /api/v1/lists/{list_id}/members
+X-API-Key: your-api-key
+```
+
+Get all members of a specific list.
+
+#### Remove Account from List
+```http
+DELETE /api/v1/lists/{list_id}/members/{account_id}
+X-API-Key: your-api-key
+```
+
+Remove a specific account from a list.
+
 ### Cleanup Operations
 
 #### Delete Account
@@ -274,6 +391,33 @@ curl -X POST http://localhost:5555/api/v1/tweets/post-pending \
   -H "X-API-Key: your-api-key"
 ```
 
+### 3. Lists Management Example
+
+```bash
+# Set an account as list owner
+curl -X POST http://localhost:5555/api/v1/accounts/1/set-type \
+  -H "X-API-Key: your-api-key" \
+  -H "Content-Type: application/json" \
+  -d '{"account_type": "list_owner"}'
+
+# Create a list
+curl -X POST http://localhost:5555/api/v1/lists \
+  -H "X-API-Key: your-api-key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "My Favorite Accounts",
+    "description": "Accounts I follow closely",
+    "mode": "private",
+    "owner_account_id": 1
+  }'
+
+# Add accounts to the list
+curl -X POST http://localhost:5555/api/v1/lists/1/members \
+  -H "X-API-Key: your-api-key" \
+  -H "Content-Type: application/json" \
+  -d '{"account_ids": [2, 3, 4]}'
+```
+
 ## Twitter Developer Setup
 
 1. Create a Twitter Developer Account at https://developer.twitter.com
@@ -281,7 +425,7 @@ curl -X POST http://localhost:5555/api/v1/tweets/post-pending \
 3. Configure OAuth 2.0 settings:
    - Enable OAuth 2.0
    - Set callback URL: `http://localhost:5555/auth/callback`
-   - Required scopes: `tweet.read`, `tweet.write`, `users.read`, `offline.access`
+   - Required scopes: `tweet.read`, `tweet.write`, `users.read`, `list.read`, `list.write`, `offline.access`
 4. Copy Client ID and Client Secret to your `.env` file
 5. Ensure the callback URL is set to: `http://localhost:5555/auth/callback`
 
@@ -321,14 +465,23 @@ Error responses include a JSON body:
 | Endpoint | Method | Auth | Description |
 |----------|--------|------|-------------|
 | `/api/v1/health` | GET | No | Health check |
-| `/api/v1/accounts` | GET | Yes | List all accounts |
+| `/api/v1/accounts` | GET | Yes | List all accounts (with type filter) |
 | `/api/v1/accounts/{id}` | GET | Yes | Get account details |
+| `/api/v1/accounts/{id}/set-type` | POST | Yes | Set account type |
 | `/api/v1/tweet` | POST | Yes | Create new tweet |
 | `/api/v1/tweets` | GET | Yes | List all tweets |
 | `/api/v1/tweet/post/{id}` | POST | Yes | Post tweet to Twitter |
 | `/api/v1/tweets/post-pending` | POST | Yes | Post all pending tweets |
 | `/api/v1/auth/twitter` | GET | Yes | Start OAuth flow |
 | `/auth/callback` | GET | No | OAuth callback (automatic) |
+| `/api/v1/lists` | POST | Yes | Create new list |
+| `/api/v1/lists` | GET | Yes | Get all lists |
+| `/api/v1/lists/{id}` | GET | Yes | Get list details |
+| `/api/v1/lists/{id}` | PUT | Yes | Update list |
+| `/api/v1/lists/{id}` | DELETE | Yes | Delete list |
+| `/api/v1/lists/{id}/members` | POST | Yes | Add accounts to list |
+| `/api/v1/lists/{id}/members` | GET | Yes | Get list members |
+| `/api/v1/lists/{id}/members/{account_id}` | DELETE | Yes | Remove from list |
 | `/api/v1/stats` | GET | Yes | Get statistics |
 | `/api/v1/test` | GET | Yes | Test API key |
 | `/api/v1/mock-mode` | GET/POST | Yes | Control mock mode |

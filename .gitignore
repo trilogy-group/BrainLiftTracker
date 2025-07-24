@@ -4,6 +4,7 @@
 .env.development
 .env.production
 .env.*
+!.env.example
 
 # Python
 __pycache__/
@@ -135,3 +136,10 @@ kill_*.ps1
 
 # Deployment guides (keep private)
 DEPLOY_LIGHTSAIL.md
+
+# Internal documentation
+prompt.md
+USAGE_EXAMPLES.md
+
+# Claude AI settings
+.claude/

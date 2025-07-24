@@ -49,6 +49,10 @@ if not TWITTER_CLIENT_ID or not TWITTER_CLIENT_SECRET:
     print("Get these from: https://developer.twitter.com/en/portal/dashboard")
 TWITTER_CALLBACK_URL = os.environ.get('TWITTER_CALLBACK_URL', 'http://localhost:5555/auth/callback')
 
+if 'localhost' in TWITTER_CALLBACK_URL and os.environ.get('FLASK_ENV') == 'production':
+    print("WARNING: Using localhost callback URL in production environment!")
+    print("Please set TWITTER_CALLBACK_URL in .env file to your server's address.")
+
 # Mock mode disabled - we want real Twitter posting
 MOCK_TWITTER_POSTING = False
 
@@ -373,7 +377,7 @@ def twitter_auth():
     params = {
         'response_type': 'code',
         'client_id': TWITTER_CLIENT_ID,
-        'redirect_uri': 'http://localhost:5555/auth/callback',
+        'redirect_uri': TWITTER_CALLBACK_URL,
         'scope': 'tweet.read tweet.write users.read list.read list.write offline.access',
         'state': state,
         'code_challenge': code_challenge,
@@ -435,7 +439,7 @@ def auth_callback():
         'code': code,
         'grant_type': 'authorization_code',
         'client_id': TWITTER_CLIENT_ID,
-        'redirect_uri': 'http://localhost:5555/auth/callback',
+        'redirect_uri': TWITTER_CALLBACK_URL,
         'code_verifier': code_verifier
     }
     
@@ -1503,7 +1507,7 @@ def auth_callback_redirect():
         'code': code,
         'grant_type': 'authorization_code',
         'client_id': TWITTER_CLIENT_ID,
-        'redirect_uri': 'http://localhost:5555/auth/callback',
+        'redirect_uri': TWITTER_CALLBACK_URL,
         'code_verifier': code_verifier
     }
     

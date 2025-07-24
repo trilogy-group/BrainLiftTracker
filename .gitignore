@@ -110,7 +110,7 @@ yarn-debug.log*
 yarn-error.log*
 
 # Postman
-*.postman_environment.json
+# *.postman_environment.json  # Commented out - environments are safe to share
 
 # Documentation build
 docs/_build/
